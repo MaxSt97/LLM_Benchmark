@@ -20,12 +20,12 @@ errors = {
 
 # Hilfsfunktionen
 def save_to_file(filename, content):
-    """Speichert den gegebenen Inhalt in einer Datei."""
+    "Speichert den gegebenen Inhalt in einer Datei."
     with open(filename, "w", encoding="utf-8") as file:
         file.write(content)
 
 def extract_code_blocks(content):
-    """Extrahiert Python-Codeblöcke aus Markdown-formatiertem Text."""
+    "Extrahiert Python-Codeblöcke aus Markdown-formatiertem Text."
     code_blocks = re.findall(r"```python(.*?)```", content, re.DOTALL)
     return [block.strip() for block in code_blocks]
 
@@ -37,7 +37,7 @@ os.makedirs(error_tasks_dir, exist_ok=True)
 
 # Funktion zur Generierung des fehlerhaften Codes
 def generate_faulty_code(original_code, error_type, description):
-    """Generiert fehlerhaften Code basierend auf einer Fehlerbeschreibung."""
+    "Generiert fehlerhaften Code basierend auf einer Fehlerbeschreibung."
     prompt = (f"Hier ist ein funktionierender Python-Code: \n\n{original_code}\n\n"
               f"{description}\n"
               f"Der Fehler muss innerhalb der bereits existierenden Funktion(en) integriert werden. Außerhalb dieser Funktion(en) darf nichts ergänzt werden.\n"
@@ -58,7 +58,7 @@ def generate_faulty_code(original_code, error_type, description):
 
 # Funktion zur Generierung von Unittests
 def generate_unittest(original_code, faulty_code, error_file):
-    """Generiert Unittests für den gegebenen fehlerhaften Code."""
+    "Generiert Unittests für den gegebenen fehlerhaften Code."
     module_name = os.path.splitext(os.path.basename(error_file))[0]
     prompt = (f"Hier ist ein funktionierender Python-Code: \n\n{original_code}\n\n"
               f"Hier ist eine fehlerhafte Version davon: \n\n{faulty_code}\n\n"
