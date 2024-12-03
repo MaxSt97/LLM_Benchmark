@@ -8,15 +8,27 @@ from dotenv import load_dotenv
 
 # OpenAI API-Key initialisieren
 load_dotenv()
-api_key = os.getenv("secret_api_key")
+api_key = os.getenv("secret_api_key_openai")
 client = OpenAI(api_key=api_key)
+
+"""# Meta API-Key initialsiieren
+load_dotenv()
+api_key = os.getenv("secret_api_key_llama")
+client = OpenAI(
+  base_url="https://openrouter.ai/api/v1",
+  api_key=api_key,
+)"""
 
 # Fehlerkategorien definieren
 errors = {
     "SyntaxError": "Erzeuge einen Syntaxfehler, der bei der Ausführung des Codes direkt einen Fehler auslöst.",
     "LogicError": "Erzeuge einen Logikfehler, der falsche Ergebnisse liefert, ohne einen direkten Fehler auszulösen.",
-    "RuntimeError": "Erzeuge einen Laufzeitfehler, der erst zur Laufzeit auftritt."
+    "RuntimeError": "Erzeuge einen Laufzeitfehler. Beispielsweise: Division durch Null"
+    "Zugriff auf nicht existierende Indizes in einer Liste,"
+    "Nutzung von nicht definierten Variablen,Typfehler, z. B. Addition eines Strings zu einer Zahl"
 }
+# Anzahl der Testfälle für den Unittest
+u = 20
 
 # Hilfsfunktionen
 def save_to_file(filename, content):
@@ -44,7 +56,7 @@ def generate_faulty_code(original_code, error_type, description):
               "Gib den fehlerhaften Code als Python-Codeblock im Markdown-Format zurück.")
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
             max_tokens=1024
@@ -62,15 +74,16 @@ def generate_unittest(original_code, faulty_code, error_file):
     module_name = os.path.splitext(os.path.basename(error_file))[0]
     prompt = (f"Hier ist ein funktionierender Python-Code: \n\n{original_code}\n\n"
               f"Hier ist eine fehlerhafte Version davon: \n\n{faulty_code}\n\n"
-              "Erstelle einen Unittest mit mindestens 40 Testfällen, die erfolgreich sind, wenn der Code fehlerfrei ist.\n"
-              f"Die Fehlerhafte Lösung wird in {module_name}.py gespeichert. Stelle sicher, dass der Unittest diese importiert.\n"
+              f"Erstelle einen Unittest mit mindestens {u} Testfällen.\n"
+              f"Stelle sicher, dass die generierten Testfälle beim funktionierenden Code erfolgreich sind.\n"
+              f"Die Fehlerhafte Lösung wird in {module_name}.py gespeichert. Stelle sicher, dass der Unittest nur die passende Solution-Klasse importiert.\n"
               f"Die Testfälle müssen als test_case[] gekapselt sein.\n"
-              "Die Testfälle müssen alle Komponenten abdecken. Gib den Unittest als Python-Codeblock im Markdown-Format zurück.\n")
+              "Gib den Unittest als Python-Codeblock im Markdown-Format zurück.")
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.5,
+            temperature=0,
             max_tokens=1024
         )
         response_content = response.choices[0].message.content
