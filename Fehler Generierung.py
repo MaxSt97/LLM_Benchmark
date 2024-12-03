@@ -74,11 +74,11 @@ def generate_unittest(original_code, faulty_code, error_file):
     module_name = os.path.splitext(os.path.basename(error_file))[0]
     prompt = (f"Hier ist ein funktionierender Python-Code: \n\n{original_code}\n\n"
               f"Hier ist eine fehlerhafte Version davon: \n\n{faulty_code}\n\n"
-              f"Erstelle einen Unittest mit mindestens {u} Testfällen.\n"
-              f"Stelle sicher, dass die generierten Testfälle beim funktionierenden Code erfolgreich sind.\n"
-              f"Die Fehlerhafte Lösung wird in {module_name}.py gespeichert. Stelle sicher, dass der Unittest nur die passende Solution-Klasse importiert.\n"
-              f"Die Testfälle müssen als test_case[] gekapselt sein.\n"
-              "Gib den Unittest als Python-Codeblock im Markdown-Format zurück.")
+              f"Erstelle einen Python-Unittest mit mindestens {u} unterschiedlichen Testfällen.\n"
+              f"Stelle sicher, dass die generierten Testfälle beim funktionierenden Code erfolgreich sind, aber beim fehlerhaften Code fehlschlagen.\n"
+              f"Die fehlerhafte Lösung ist in der Datei {module_name}.py gespeichert und enthält eine Klasse namens Solution. Importiere in deinem Unittest nur die Solution-Klasse aus dieser Datei.\n"
+              f"Kapsle die Testfälle in einer Liste namens test_cases[].\n"
+              "Gib den vollständigen Unittest als Python-Codeblock im Markdown-Format zurück.")
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
