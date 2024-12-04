@@ -3,21 +3,10 @@ from openai import OpenAI
 import re
 from dotenv import load_dotenv
 
-
-
-
 # OpenAI API-Key initialisieren
 load_dotenv()
 api_key = os.getenv("secret_api_key_openai")
 client = OpenAI(api_key=api_key)
-
-"""# Meta API-Key initialsiieren
-load_dotenv()
-api_key = os.getenv("secret_api_key_llama")
-client = OpenAI(
-  base_url="https://openrouter.ai/api/v1",
-  api_key=api_key,
-)"""
 
 # Fehlerkategorien definieren
 errors = {
@@ -25,10 +14,10 @@ errors = {
     "LogicError": "Erzeuge einen Logikfehler, der falsche Ergebnisse liefert, ohne einen direkten Fehler auszulösen.",
     "RuntimeError": "Erzeuge einen Laufzeitfehler. Beispielsweise: Division durch Null"
     "Zugriff auf nicht existierende Indizes in einer Liste,"
-    "Nutzung von nicht definierten Variablen,Typfehler, z. B. Addition eines Strings zu einer Zahl"
-}
+    "Nutzung von nicht definierten Variablen,Typfehler, z. B. Addition eines Strings zu einer Zahl"}
+
 # Anzahl der Testfälle für den Unittest
-u = 20
+num_testcase_unittest = 30
 
 # Hilfsfunktionen
 def save_to_file(filename, content):
@@ -52,11 +41,12 @@ def generate_faulty_code(original_code, error_type, description):
     "Generiert fehlerhaften Code basierend auf einer Fehlerbeschreibung."
     prompt = (f"Hier ist ein funktionierender Python-Code: \n\n{original_code}\n\n"
               f"{description}\n"
+              "Überlege genau, der Fehler sollte zwingend auftreten und auch komplex zu identifizieren sein."
               f"Der Fehler muss innerhalb der bereits existierenden Funktion(en) integriert werden. Außerhalb dieser Funktion(en) darf nichts ergänzt werden.\n"
-              "Gib den fehlerhaften Code als Python-Codeblock im Markdown-Format zurück.")
+              "Gib den fehlerhaften Code als Python-Codeblock im Markdown-Format zurück. Es dürfen unter keinen Umständen Kommentare hinzugefügt werden, weder innerhalb noch außerhalb des Codes.")
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
             max_tokens=1024
@@ -72,13 +62,14 @@ def generate_faulty_code(original_code, error_type, description):
 def generate_unittest(original_code, faulty_code, error_file):
     "Generiert Unittests für den gegebenen fehlerhaften Code."
     module_name = os.path.splitext(os.path.basename(error_file))[0]
-    prompt = (f"Hier ist ein funktionierender Python-Code: \n\n{original_code}\n\n"
-              f"Hier ist eine fehlerhafte Version davon: \n\n{faulty_code}\n\n"
-              f"Erstelle einen Python-Unittest mit mindestens {u} unterschiedlichen Testfällen.\n"
-              f"Stelle sicher, dass die generierten Testfälle beim funktionierenden Code erfolgreich sind, aber beim fehlerhaften Code fehlschlagen.\n"
-              f"Die fehlerhafte Lösung ist in der Datei {module_name}.py gespeichert und enthält eine Klasse namens Solution. Importiere in deinem Unittest nur die Solution-Klasse aus dieser Datei.\n"
-              f"Kapsle die Testfälle in einer Liste namens test_cases[].\n"
-              "Gib den vollständigen Unittest als Python-Codeblock im Markdown-Format zurück.")
+    prompt = (
+        f"Hier ist ein funktionierender Python-Code: \n\n{original_code}\n\n"
+        f"Schreibe für diesen Code einen Unittest bestehend aus {num_testcase_unittest} Tesfällen, die für den bereitgestellten Code erfolgreich sein müssen."
+        "Sieh dir jeden einzelnen Testfall genau an und überlege Schritt für Schritt warum dieser erfolgreicht ist für den bereitgestellten Code."
+        f"Die fehlerhafte Lösung ist in der Datei {module_name}.py gespeichert und enthält eine Klasse namens Solution. Importiere in deinem Unittest nur die Solution-Klasse aus dieser Datei.\n"
+        f"Kapsle die Testfälle in einer Liste namens test_cases[].\n"
+        "Gib den vollständigen Unittest als Python-Codeblock im Markdown-Format zurück.")
+
     try:
         response = client.chat.completions.create(
             model="gpt-4o",
