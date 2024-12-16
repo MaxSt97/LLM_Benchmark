@@ -17,3 +17,16 @@ def delete_temp_files(directory):
 
 # Funktion aufrufen
 delete_temp_files(error_tasks_directory)
+def delete_temp_filesI(directory):
+    """Löscht alle Dateien in einem Verzeichnis, die auf '_temp.py' enden."""
+    try:
+        for file in os.listdir(directory):
+            file_path = os.path.join(directory, file)
+            if os.path.isfile(file_path) and file.endswith("_corrected.py"):
+                os.remove(file_path)
+                print(f"Gelöscht: {file_path}")
+        print("Alle '_temp.py'-Dateien wurden gelöscht.")
+    except Exception as e:
+        print(f"Fehler beim Löschen der Dateien: {e}")
+
+delete_temp_filesI(error_tasks_directory)

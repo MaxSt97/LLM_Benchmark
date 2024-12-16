@@ -1,0 +1,12 @@
+geopandas
+numpy
+pandas
+pyogrio
+pyproj
+shapely
+openai
+matplotlib
+scikit-learn
+keras
+python-dotenv
+openpyxl

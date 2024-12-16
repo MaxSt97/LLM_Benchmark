@@ -49,7 +49,7 @@ def extract_code_blocks(content):
     return [block.strip() for block in code_blocks]
 
 # Verzeichnisse festlegen
-initial_tasks_dir = "tasks/initial_tasks"
+initial_tasks_dir = "tasks/initial_tasks_leetcode"
 error_tasks_dir = "tasks/error_tasks"
 
 os.makedirs(error_tasks_dir, exist_ok=True)
@@ -81,13 +81,13 @@ def generate_unittest_for_all(original_code, faulty_files):
     "Generiert einen Unittest für alle fehlerhaften Codes in allen Kategorien."
     prompt = (
         f"Hier ist ein funktionierender Python-Code: \n\n{original_code}\n\n"
-        f"Schreibe für diesen Code einen Unittest bestehend aus 20 Tesfällen, die für den bereitgestellten Code erfolgreich sein müssen."
+        f"Schreibe für diesen Code einen Unittest bestehend aus 15 Tesfällen, die für den bereitgestellten Code erfolgreich sein müssen."
         "Sieh dir jeden einzelnen Testfall genau an und überlege Schritt für Schritt warum dieser erfolgreicht ist für den bereitgestellten Code."
         f"Kapsle die Testfälle in einer Liste namens test_cases[].\n"
         "Gib den vollständigen Unittest als Python-Codeblock im Markdown-Format zurück.")
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
             max_tokens=1024
@@ -101,7 +101,7 @@ def generate_unittest_for_all(original_code, faulty_files):
 
 # Hauptprozess: Für alle Task-Dateien
 task_files = [f for f in os.listdir(initial_tasks_dir) if f.endswith(".py")]
-task_files= ["Task_01.py"]
+task_files= ["Task_30.py"]
 for task_file in task_files:
     task_path = os.path.join(initial_tasks_dir, task_file)
     with open(task_path, "r", encoding="utf-8") as file:

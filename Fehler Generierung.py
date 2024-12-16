@@ -31,7 +31,7 @@ def extract_code_blocks(content):
     return [block.strip() for block in code_blocks]
 
 # Verzeichnisse festlegen
-initial_tasks_dir = "tasks/initial_tasks"
+initial_tasks_dir = "tasks/initial_tasks_leetcode"
 error_tasks_dir = "tasks/error_tasks"
 
 os.makedirs(error_tasks_dir, exist_ok=True)
@@ -86,7 +86,7 @@ def generate_unittest(original_code, faulty_code, error_file):
 
 # Hauptprozess
 task_files = [f for f in os.listdir(initial_tasks_dir) if f.endswith(".py")]
-task_files=["Task_01.py"]
+task_files=["Task_30.py"]
 for task_file in task_files:
     task_path = os.path.join(initial_tasks_dir, task_file)
     with open(task_path, "r", encoding="utf-8") as file:

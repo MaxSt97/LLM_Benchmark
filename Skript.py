@@ -83,7 +83,7 @@ def main():
     }
 
     # Verzeichnisse festlegen
-    initial_tasks_dir = "tasks/initial_tasks"
+    initial_tasks_dir = "tasks/initial_tasks_leetcode"
     error_tasks_dir = "tasks/error_tasks"
 
     os.makedirs(error_tasks_dir, exist_ok=True)
