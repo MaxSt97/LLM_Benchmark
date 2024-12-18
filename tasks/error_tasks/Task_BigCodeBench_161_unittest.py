@@ -1,9 +1,7 @@
-from Task_BigCodeBench_161_Syntaxfehler_corrected import *
 import unittest
 import os
 import pandas as pd
 from unittest.mock import mock_open, patch
-
 class TestCases(unittest.TestCase):
     def setUp(self):
         self.sample_log_file = 'test_server.log'

@@ -22,5 +22,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app/
 
 # Standardbefehl
-CMD ["python", "BigCodeBench_FehlerCheck.py"]
+CMD ["python", "Temp_FehlerCheck.py"]
 
