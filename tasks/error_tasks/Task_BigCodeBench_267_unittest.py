@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-
+from Task_BigCodeBench_267_logicerror import task_func
 class TestCases(unittest.TestCase):
     def test_case_1(self):
         data = {'key1': 1, 'key2': 2, 'key3': 3}
@@ -76,6 +76,25 @@ class TestCases(unittest.TestCase):
         self.assertEqual(ax.get_title(), 'FFT of the Signal')
         self.assertEqual(ax.get_xlabel(), 'Frequency [Hz]')
         self.assertEqual(ax.get_ylabel(), 'Frequency Spectrum Magnitude')
+
+    def test_fft_dimensions(self):
+        """Test that FFT is applied to the entire signal matrix."""
+        # Create test data
+        data = {'key1': 1, 'key2': 2, 'key3': 3}
+        fft, _ = task_func(data)
+
+        # Generate expected signal dimensions
+        sample_rate = 100
+        data['a'] = 1
+        signal = np.array(list(data.values()))
+        time = np.linspace(0, 2, 2 * sample_rate, False)
+        expected_signal = np.sin(np.outer(time, signal) * np.pi)
+
+        # Verify FFT dimensions match the entire signal
+        self.assertEqual(
+            fft.shape, expected_signal.shape,
+            "FFT dimensions do not match the signal matrix dimensions. Ensure FFT is applied to the entire signal."
+        )
 
 if __name__ == '__main__':
     unittest.main()

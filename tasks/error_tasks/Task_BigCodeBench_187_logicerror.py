@@ -17,9 +17,9 @@ def task_func(cities=None, dic=None):
     data = {'City': [], 'Coordinates': []}
     for city in cities:
         data['City'].append(city)
-
         data['Coordinates'].append(Point(np.random.uniform(lat_min, lat_max), np.random.uniform(lon_min, lon_max)))
 
     gdf = gpd.GeoDataFrame(data, geometry='Coordinates')
 
     return gdf
+

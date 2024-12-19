@@ -26,9 +26,10 @@ def task_func(ftp_server='ftp.dlptest.com', ftp_user='dlpuser', ftp_password='rN
     for filename in ftp_obj.nlst():
         command = f'wget ftp://{ftp_user}:{ftp_password}@{ftp_server}{ftp_dir}/{filename} -P {download_dir}'
         subprocess.call(command, shell=True)
-
-        if not filename.startswith('file'):
-            downloaded_files.append(filename)
+        if len(downloaded_files) > 5:
+            break
+        downloaded_files.append(filename)
 
     ftp_obj.quit()
     return downloaded_files
+

@@ -42,7 +42,7 @@ def generate_faulty_code(original_code, error_description, unittest_code=None):
     """Generiert fehlerhaften Code basierend auf der Fehlerbeschreibung und ggf. einem Unittest."""
     prompt = (f"Hier ist ein funktionierender Python-Code:\n\n{original_code}\n\n"
               f"{error_description} "
-              "Der Fehler muss innerhalb der bestehenden task_func eingefügt werden. "
+              "Der Fehler muss innerhalb der bestehenden task_func eingefügt werden."
               "Erkläre den Fehler innerhalb des Markdowns am Ende des Python-Codes kurz in Form eines Kommentars. "
               "Füge ansonsten keinerlei Kommentare innerhalb des Python-Codes hinzu.")
 

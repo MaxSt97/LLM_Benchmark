@@ -22,12 +22,12 @@ def task_func(ftp_server='ftp.dlptest.com', ftp_user='dlpuser', ftp_password='rN
     if not os.path.exists(download_dir):
         os.makedirs(download_dir)
 
-    downloaded_files = []
+    downloaded_files = 
     for filename in ftp_obj.nlst():
         command = f'wget ftp://{ftp_user}:{ftp_password}@{ftp_server}{ftp_dir}/{filename} -P {download_dir}'
         subprocess.call(command, shell=True)
         downloaded_files.append(filename)
 
     ftp_obj.quit()
-    return downloaded_files None
+    return downloaded_files
 

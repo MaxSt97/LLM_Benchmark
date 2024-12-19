@@ -2,7 +2,6 @@ import unittest
 import os
 import tempfile
 import zipfile
-from Task_BigCodeBench_19 import task_func
 
 
 class TestCases(unittest.TestCase):

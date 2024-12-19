@@ -44,8 +44,10 @@ def generate_faulty_code(original_code, error_description):
     """Generiert fehlerhaften Code basierend auf der Fehlerbeschreibung."""
     prompt = (f"Hier ist ein funktionierender Python-Code:\n\n{original_code}\n\n"
               f"{error_description} "
-              "Der Fehler muss innerhalb der bestehenden task_func eingefügt werden."
-              "Erkläre den Fehler innerhalb des Markdowns am Ende des Python-Codes kurz in Form eines Kommentars. Füge ansonsten keinerlei Kommentare innerhalb des Python-Codes hinzu."
+              "Der Fehler muss innerhalb der bestehenden task_func implementiert werden."
+              "Zeige am Ende des Python-Codes die Position des Fehlers an."
+              "Benenne außerdem die Subkategorie des Fehlers (z. B. fehlende Klammer, Syntaxfehler, falscher Variablentyp, etc.)."
+              "Füge abgesehen von diesen Kommentaren keinerlei Kommentare ein."
               "Gib den fehlerhaften Code als Python-Codeblock im Markdown-Format zurück.")
 
     try:

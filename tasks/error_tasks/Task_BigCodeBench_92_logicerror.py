@@ -10,13 +10,7 @@ def task_func(data, n_clusters):
         raise ValueError("'n_clusters' must be an integer greater than 1.")
 
     kmeans = KMeans(n_clusters=n_clusters)
-    labels = kmeans.fit_predict(data)
-    centroids = kmeans.cluster_centers_
-
-
-
-    kmeans = KMeans(n_clusters=2)
-    labels = kmeans.fit_predict(data)
+    labels = kmeans.fit_predict(data.iloc[:, 1:])
     centroids = kmeans.cluster_centers_
 
     fig, ax = plt.subplots()
@@ -28,3 +22,4 @@ def task_func(data, n_clusters):
     ax.legend()
 
     return labels, ax
+

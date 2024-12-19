@@ -2,6 +2,7 @@ import unittest
 import os
 import pandas as pd
 from unittest.mock import mock_open, patch
+
 class TestCases(unittest.TestCase):
     def setUp(self):
         self.sample_log_file = 'test_server.log'
@@ -52,6 +53,35 @@ class TestCases(unittest.TestCase):
         with patch('builtins.open', mock_open(read_data=malformed_content)):
             with self.assertRaises(ValueError):
                 task_func('malformed.log')
+
+    def test_message_strip(self):
+        # Erstellen Sie eine Log-Datei mit Nachrichten, die führende und nachfolgende Leerzeichen enthalten
+        log_content = (
+            "ERROR: [2023-03-23 16:00:00] -    Error message with leading spaces\n"
+            "INFO: [2023-03-23 16:05:00] - Info message with trailing spaces    \n"
+            "INFO: [2023-03-23 16:10:00] -   Warning message with both    \n"  # Ändern Sie WARNING zu INFO
+        )
+        with open(self.sample_log_file, 'w') as log_file:
+            log_file.write(log_content)
+
+        expected_df = pd.DataFrame({
+            'Type': ['ERROR', 'INFO', 'INFO'],
+            'Timestamp': [
+                '2023-03-23 16:00:00',
+                '2023-03-23 16:05:00',
+                '2023-03-23 16:10:00'
+            ],
+            'Message': [
+                'Error message with leading spaces',
+                'Info message with trailing spaces',
+                'Warning message with both'
+            ]
+        })
+
+        generated_csv_path = task_func(self.sample_log_file)
+        self.assertTrue(os.path.exists(generated_csv_path), "CSV file was not created.")
+        generated_df = pd.read_csv(generated_csv_path)
+        pd.testing.assert_frame_equal(expected_df, generated_df)
 
 if __name__ == '__main__':
     unittest.main()

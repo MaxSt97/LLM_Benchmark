@@ -19,8 +19,7 @@ def task_func(data, n_clusters):
     ax.set_xlabel('Feature 1')
     ax.set_ylabel('Feature 2')
     ax.set_title('K-Means Clustering')
-    ax.legend()
-
-    x = 5 / 0
+    ax.legend
 
     return labels, ax
+

@@ -13,8 +13,8 @@ def task_func(directory):
     
     zip_file_path = os.path.join(directory, 'files.zip')
     with zipfile.ZipFile(zip_file_path, 'w') as zipf:
-        for i, file in enumerate(files):
-            if i % 2 == 0:
+        for file in files:
+            if os.path.basename(file) == 'files.zip':
                 zipf.write(file, os.path.basename(file))
     
     return zip_file_path

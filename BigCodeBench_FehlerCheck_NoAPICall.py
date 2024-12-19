@@ -53,7 +53,7 @@ def run_tests_for_error_tasks(error_tasks_dir):
                             # Führe den Unittest aus
                             exec(final_unittest_code, globals())
 
-                            suite = unittest.TestLoader().loadTestsFromTestCase(TestCases)  # Ersetzen Sie 'TestTask' durch Ihren Klassennamen!
+                            suite = unittest.TestLoader().loadTestsFromTestCase(TestCases)  # Ersetzen Sie 'TestCases' durch Ihren Klassennamen!
                             runner = unittest.TextTestRunner()
                             result = runner.run(suite)
 
@@ -67,6 +67,14 @@ def run_tests_for_error_tasks(error_tasks_dir):
     for filename in successful_tests:
         print(filename)
 
+    # Hinzugefügt: Schreiben der erfolgreichen Tests in eine Textdatei
+    try:
+        with open("successful_tests.txt", "w") as f:
+            for filename in successful_tests:
+                f.write(f"{filename}\n")
+        print("\nDie Liste der erfolgreichen Unittests wurde in 'successful_tests.txt' gespeichert.")
+    except Exception as e:
+        print(f"Fehler beim Schreiben der erfolgreichen Tests in die Datei: {e}")
 
 if __name__ == "__main__":
     error_tasks_dir = os.path.join("tasks", "error_tasks")

@@ -15,12 +15,11 @@ def task_func(data, n_clusters):
 
     fig, ax = plt.subplots()
     ax.scatter(data.iloc[:, 0], data.iloc[:, 1], c=labels, cmap='viridis', alpha=0.6, label='Data points')
-    ax.scatter(centroids[:, 0], centroids[:, 1], marker='x', s=200, c='red', label='Centroids')
+    ax.scatter(centroids[:, 0], centroids[:, 1], marker='x', s=200, c='red', label='Centroids'
     ax.set_xlabel('Feature 1')
     ax.set_ylabel('Feature 2')
     ax.set_title('K-Means Clustering')
     ax.legend()
 
-    return labels, ax.get_children()
-
+    return labels, ax
 
