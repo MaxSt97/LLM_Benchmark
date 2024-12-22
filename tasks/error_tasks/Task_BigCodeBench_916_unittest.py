@@ -2,7 +2,6 @@ import unittest
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-
 class TestCases(unittest.TestCase):
     
     def test_case_1(self):

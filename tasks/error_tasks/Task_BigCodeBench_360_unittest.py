@@ -3,7 +3,6 @@ import os
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
-from Task_BigCodeBench_360_runtimeerror import task_func
 def create_dummy_excel(file_path='test.xlsx'):
     """
     Creates a dummy Excel file for testing.

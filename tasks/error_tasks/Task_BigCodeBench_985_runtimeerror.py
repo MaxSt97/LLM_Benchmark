@@ -22,7 +22,7 @@ def task_func(json_data, output_dir=".", file_name="country_population_report.cs
             raise ValueError(f"Country name must be a string. Invalid entry: {country[16]}") #
         if not isinstance(population, int):
             if isinstance(population, float):
-                country_data_dict[country] = math.floor(population)
+                country_data_dict[countr] = math.floor(population)
             else:
                 raise ValueError(f"Population must be an integer. Invalid entry for {country}: {population}")
         if population < 0:

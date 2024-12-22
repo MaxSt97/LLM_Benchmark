@@ -13,7 +13,12 @@ def task_func(a, b):
     np.random.seed(0)
     selected_columns = COLUMNS[:len(b)]
     df = pd.DataFrame(np.random.randn(len(a), len(b)), index=a, columns=selected_columns)
-    ax = df.plot(kind='bar')
+
+    df = df.plot(kind='bar')
+
+    df['Extra'] = 1
+
     plt.show()
-    return ax 'test'
+    return df
+
 

@@ -1,6 +1,5 @@
 import unittest
 import matplotlib.pyplot as plt
-
 class TestCases(unittest.TestCase):
     """Test cases for task_func."""
     

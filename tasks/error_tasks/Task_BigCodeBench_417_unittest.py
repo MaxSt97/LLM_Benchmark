@@ -3,6 +3,7 @@ import unittest
 from keras.models import Sequential
 from keras.optimizers import SGD
 import matplotlib.pyplot as plt
+from Task_BigCodeBench_417_runtimeerror import task_func
 class TestCases(unittest.TestCase):
     def setUp(self):
         # Set up input and output data for the tests

@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 import ssl
 import os
 import hashlib
-
 class TestCases(unittest.TestCase):
     """Unit tests for task_func."""
     @patch("ssl.SSLContext")

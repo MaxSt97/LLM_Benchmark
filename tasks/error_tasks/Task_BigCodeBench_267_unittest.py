@@ -1,6 +1,5 @@
 import unittest
 import numpy as np
-from Task_BigCodeBench_267_logicerror import task_func
 class TestCases(unittest.TestCase):
     def test_case_1(self):
         data = {'key1': 1, 'key2': 2, 'key3': 3}

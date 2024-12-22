@@ -5,7 +5,6 @@ from matplotlib.collections import PathCollection
 import numpy as np
 import pandas as pd
 
-
 class TestCases(unittest.TestCase):
     def setUp(self):
         np.random.seed(42)
@@ -41,6 +40,7 @@ class TestCases(unittest.TestCase):
         labels, _ = task_func(self.data, 3)
         unique_labels = np.unique(labels)
         self.assertEqual(len(unique_labels), 3)  # Checking if 3 unique labels are returned
+
 
 
 

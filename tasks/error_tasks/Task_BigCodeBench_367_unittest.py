@@ -1,6 +1,5 @@
 import unittest
 from datetime import datetime
-
 class TestCases(unittest.TestCase):
     def test_case_1(self):
         # Input: Activities on Monday and Tuesday

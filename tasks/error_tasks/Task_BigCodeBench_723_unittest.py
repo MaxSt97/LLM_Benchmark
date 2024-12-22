@@ -1,6 +1,5 @@
 import unittest
 from unittest.mock import patch, mock_open, MagicMock
-
 class TestCases(unittest.TestCase):
     @patch('urllib.request.urlopen')
     @patch('builtins.open', new_callable=mock_open)

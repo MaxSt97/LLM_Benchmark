@@ -2,7 +2,6 @@ import unittest
 import os
 import shutil
 import zipfile
-
 class TestCases(unittest.TestCase):
     def setUp(self):
         # Setup test directories

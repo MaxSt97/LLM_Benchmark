@@ -13,7 +13,4 @@ def task_func(data, sample_rate=100):
     ax.set_title('FFT of the Signal')
     ax.set_xlabel('Frequency [Hz]')
     ax.set_ylabel('Frequency Spectrum Magnitude')
-    return fft, ax, unknown_variable
-
-print("Fehlerposition: Zeile 13")
-print("Subkategorie des Fehlers: unbekannte Variable")
+    return fft, ax, bx

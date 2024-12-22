@@ -3,7 +3,6 @@ import os
 import tempfile
 import zipfile
 
-
 class TestCases(unittest.TestCase):
 
     def setUp(self):
