@@ -1,7 +1,6 @@
 import unittest
 import numpy as np
 import matplotlib.pyplot as plt
-
 class TestCases(unittest.TestCase):
     def test_case_1(self):
         # Test with default parameters

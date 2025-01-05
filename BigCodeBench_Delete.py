@@ -3,8 +3,8 @@ import os
 # Verzeichnis, in dem die Dateien gelöscht werden sollen
 error_tasks_directory = "tasks/error_tasks"
 
+# Hilfsfunktionen für das Löschen von Dateien
 def delete_temp_files(directory):
-    """Löscht alle Dateien in einem Verzeichnis, die auf '_temp.py' enden."""
     try:
         for file in os.listdir(directory):
             file_path = os.path.join(directory, file)
@@ -15,10 +15,11 @@ def delete_temp_files(directory):
     except Exception as e:
         print(f"Fehler beim Löschen der Dateien: {e}")
 
-# Funktion aufrufen
+# Löschen der temporären Dateien
 delete_temp_files(error_tasks_directory)
+
+# Hilfsfunltionen für das Löschen von Dateien
 def delete_temp_filesI(directory):
-    """Löscht alle Dateien in einem Verzeichnis, die auf '_temp.py' enden."""
     try:
         for file in os.listdir(directory):
             file_path = os.path.join(directory, file)
@@ -29,4 +30,5 @@ def delete_temp_filesI(directory):
     except Exception as e:
         print(f"Fehler beim Löschen der Dateien: {e}")
 
+# Löschen der temporären Dateien
 delete_temp_filesI(error_tasks_directory)

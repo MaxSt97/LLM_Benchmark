@@ -4,13 +4,10 @@ import re
 from openai import OpenAI
 from dotenv import load_dotenv
 
-
-
-"""# OpenAI API-Key initialisieren
+# Lade die API-Schlüssel aus der .env-Datei
 load_dotenv()
-api_key = os.getenv("secret_api_key_openai")
-client = OpenAI(api_key=api_key)"""
-load_dotenv()
+
+# Erstelle eine OpenAI-Instanz
 client = OpenAI(
     api_key=os.getenv("secret_api_key_llama"),
     base_url="https://api.deepinfra.com/v1/openai",
@@ -20,28 +17,29 @@ client = OpenAI(
 initial_tasks_dir = "tasks/initial_tasks_bigcode"
 error_tasks_dir = "tasks/error_tasks"
 
+# Erstelle das Fehlerverzeichnis, falls es nicht existiert
 os.makedirs(error_tasks_dir, exist_ok=True)
 
-# Fehlerkategorien
+# Fehlerkategorie und Beschreibung zum Generieren des fehlerhaften Codes
 errors = {
     "SyntaxError": "Füge einen Syntaxfehler in den folgenden Python-Code ein.",
     "LogicError": "Füge einen Logikfehler in den folgenden Python-Code ein. Die Änderungen sollten an Berechnungen, Bedingungen oder Datenflüssen durchgeführt werden. Der Code ist dadurch lauffähig, erzeugt aber falsche Ergebnisse.",
     "RuntimeError": "Füge einen Laufzeitfehler in den folgenden Python-Code ein."
 }
 
-# Hilfsfunktionen
+# Hilfsfunktion zum Speichern von Inhalten in Dateien
 def save_to_file(filename, content):
     """Speichert den gegebenen Inhalt in einer Datei."""
     with open(filename, "w", encoding="utf-8") as file:
         file.write(content)
 
+# Hilfsfunktion zum Extrahieren von Python-Codeblöcken aus Markdown-Text
 def extract_code_blocks(content):
-    """Extrahiert Python-Codeblöcke aus Markdown-formatiertem Text."""
     code_blocks = re.findall(r"```python(.*?)```", content, re.DOTALL)
     return [block.strip() for block in code_blocks]
 
+# Hilfsfunktion zum Generieren des fehlerhaften Codes
 def generate_faulty_code(original_code, error_description):
-    """Generiert fehlerhaften Code basierend auf der Fehlerbeschreibung."""
     prompt = (f"Hier ist ein funktionierender Python-Code:\n\n{original_code}\n\n"
               f"{error_description} "
               "Der Fehler muss innerhalb der bestehenden task_func implementiert werden."
@@ -72,7 +70,7 @@ for task_file in task_files:
     with open(task_path, "r", encoding="utf-8") as file:
         original_code = file.read()
 
-    # Generiere fehlerhaften Code für jede Fehlerkategorie
+    # Funktionsaufruf zum Generieren und speichern des fehlerhaften Codes für jede Fehlerkategorie
     for error_name, error_description in errors.items():
         print(f"Bearbeite {error_name} für {task_file}...")
         faulty_code = generate_faulty_code(original_code, error_description)

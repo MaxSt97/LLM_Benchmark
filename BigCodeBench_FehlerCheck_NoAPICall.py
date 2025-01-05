@@ -4,14 +4,8 @@ import os
 import sys
 import importlib
 
+# Hilfsfunktionen zur Ausführung von Unittests ohne API Call um zu kontrollieren, dass die Fehler implementiert wurden
 def run_tests_for_error_tasks(error_tasks_dir):
-    """
-    Führt dynamisch Unittests für fehlerhafte Dateien im angegebenen Verzeichnis aus.
-    Bricht den Unittest ab, wenn der Import der Task fehlschlägt.
-
-    Args:
-        error_tasks_dir: Das Verzeichnis, das die fehlerhaften Dateien und Unittests enthält.
-    """
     print(f"error_tasks_dir: {error_tasks_dir}")
     print(f"sys.path: {sys.path}")
 
@@ -32,7 +26,6 @@ def run_tests_for_error_tasks(error_tasks_dir):
                     full_error_task_path = os.path.join(error_tasks_dir, error_task_file)
                     if os.path.exists(full_error_task_path):
                         try:
-                            # Dynamischer Import mit importlib – Abbruch bei Fehler
                             module_name = "tasks.error_tasks." + error_task_file[:-3]
                             try:
                                 imported_module = importlib.import_module(module_name)
@@ -40,7 +33,7 @@ def run_tests_for_error_tasks(error_tasks_dir):
                                 globals().update(imported_module.__dict__)
                             except Exception as import_error:
                                 print(f"Fehler beim Importieren von {error_task_file}: {import_error}")
-                                break  # Beendet die innere Schleife bei Importfehler
+                                break
 
                             with open(os.path.join(error_tasks_dir, filename), "r") as f:
                                 unittest_code = f.read()
@@ -67,7 +60,7 @@ def run_tests_for_error_tasks(error_tasks_dir):
     for filename in successful_tests:
         print(filename)
 
-    # Hinzugefügt: Schreiben der erfolgreichen Tests in eine Textdatei
+    # Erfolgreiche Tests werden in einer Textdatei gespeichert
     try:
         with open("successful_tests.txt", "w") as f:
             for filename in successful_tests:
@@ -79,5 +72,5 @@ def run_tests_for_error_tasks(error_tasks_dir):
 if __name__ == "__main__":
     error_tasks_dir = os.path.join("tasks", "error_tasks")
     error_tasks_dir = os.path.abspath(error_tasks_dir)
-    sys.path.insert(0, os.path.dirname(error_tasks_dir))  # 'tasks' zu sys.path hinzufügen
+    sys.path.insert(0, os.path.dirname(error_tasks_dir))
     run_tests_for_error_tasks(error_tasks_dir)

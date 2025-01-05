@@ -1,6 +1,7 @@
 import os
 import shutil
 
+# Dateien erstellen ohne generierte Fehle. Löschen!
 # Verzeichnisse festlegen
 initial_tasks_dir = "tasks/initial_tasks_bigcode"
 error_tasks_dir = "tasks/error_tasks"

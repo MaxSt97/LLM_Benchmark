@@ -9,21 +9,31 @@ from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import functools
 import time
+import csv
 
-# Flush print
+# Original-Print flushen:
 print = functools.partial(print, flush=True)
 
-# Lade die API-Schlüssel aus der .env-Datei
-load_dotenv()
+# Wir puffern die Ausgaben in log_buffer.
+log_buffer = []
+old_print = print
 
-# Erstelle eine OpenAI-Instanz
+def capturing_print(*args, **kwargs):
+    text = " ".join(str(a) for a in args)
+    log_buffer.append(text)
+    return old_print(*args, **kwargs)
+
+print = capturing_print
+
+# OpenAI API-Key initialisieren
+load_dotenv()
 api_key = os.getenv("secret_api_key_openai")
 client = OpenAI(api_key=api_key)
 
-# Verzeichniss festlegen
+# Verzeichnisse
 error_tasks_directory = "tasks/error_tasks"
 
-# Hilfsfunktionen zur Auflistung von Dateien, die nicht auf unittest.py enden
+
 def get_error_files(directory):
     try:
         return [
@@ -35,7 +45,7 @@ def get_error_files(directory):
         print(f"Fehler beim Lesen des Verzeichnisses: {e}")
         return []
 
-# Hilfsfunktionen zur Dateiverarbeitung
+
 def read_file_content(file_path):
     try:
         with open(file_path, 'r') as file:
@@ -44,9 +54,8 @@ def read_file_content(file_path):
         print(f"Fehler beim Lesen der Datei {file_path}: {e}")
         return None
 
-# Hilfsfunktionen zur Fehleranalyse mittels LLM
+
 def analyze_error_with_openai(error_text, unittest_output=None):
-    """Analysiere den Fehlertext (und optional die Fehlermeldung des Unittest) mit OpenAI."""
     try:
         prompt = (
             f"Hier ist ein fehlerhafter Python-Code:\n\n{error_text}\n\n"
@@ -72,15 +81,13 @@ def analyze_error_with_openai(error_text, unittest_output=None):
         print(f"Fehler bei der Kommunikation mit der OpenAI API: {e}")
         return None
 
-# Hilfsfunktionen zur Extraktion von Codeblöcken aus Markdown
+
 def extract_code_blocks(content):
-    """Extrahiert Python-Codeblöcke aus Markdown-formatiertem Text."""
     code_blocks = re.findall(r"```python(.*?)```", content, re.DOTALL)
     return [block.strip() for block in code_blocks]
 
-# Hilfsfunktion zur Speicherung des korrigierten Codes
+
 def save_to_file(filename, content):
-    """Speichert den gegebenen Inhalt in einer Datei."""
     try:
         with open(filename, "w", encoding="utf-8") as file:
             file.write(content)
@@ -88,16 +95,17 @@ def save_to_file(filename, content):
     except Exception as e:
         print(f"Fehler beim Speichern der Datei {filename}: {e}")
 
-# Hilfsfunktionen zum dynmaischen Import der jeweiligen Datei des Unittests
+
 def inject_module_import(unittest_file_path, module_name):
     try:
         unittest_code = read_file_content(unittest_file_path)
         if unittest_code is None:
             return False
+
         # Entferne alte Importe, die mit 'from Task_' beginnen
         unittest_code = re.sub(r"^from Task_.*\n", "", unittest_code, flags=re.MULTILINE)
 
-        # Füge den neuen Import hinzu
+        # Füge den neuen Import als absoluten Import hinzu
         import_statement = f"from {module_name} import *\n"
         if import_statement not in unittest_code:
             unittest_code = import_statement + unittest_code
@@ -108,7 +116,7 @@ def inject_module_import(unittest_file_path, module_name):
         print(f"Fehler beim Importieren des Moduls: {e}")
         return False
 
-# Hilfsfunktionen zum Ausführen des Unittests
+
 def run_unittest(unittest_file, module_name, module_path):
     try:
         # Warten, um sicherzustellen, dass die Datei korrekt gespeichert wurde
@@ -127,7 +135,7 @@ def run_unittest(unittest_file, module_name, module_path):
         )
         output = result.stdout + result.stderr
 
-        # Prüfe den Rückgabewert der Ausführung um den Erfolg zu bestimmen
+        # Prüfe den Rückgabewert des Prozesses
         success = result.returncode == 0
         return success, output
     except Exception as e:
@@ -135,16 +143,18 @@ def run_unittest(unittest_file, module_name, module_path):
         return False, str(e)
 
 
-# Hilfsfunktionen zum Aufruf des LLM mit maximal drei Iterationen
 def process_file(file_path, iteration_stats):
     error_content = read_file_content(file_path)
     if not error_content:
         return file_path, False, "Keine Inhalte"
+
     corrected_code = None
     corrected_file_path = file_path.replace(".py", "_corrected.py")
     base_name = os.path.basename(file_path).split("_")[0:3]
     task_name = "_".join(base_name)
     unittest_file = os.path.join(error_tasks_directory, f"{task_name}_unittest.py")
+
+    unittest_output = None
 
     for iteration in range(3):
         print(f"Iteration {iteration + 1} für Datei: {file_path}")
@@ -161,7 +171,7 @@ def process_file(file_path, iteration_stats):
             print("Unittest-Ausgabe:")
             print(unittest_output)
 
-            # Update der Statistik
+            # Update iteration stats
             iteration_stats[iteration + 1]["total"] += 1
             if success:
                 iteration_stats[iteration + 1]["success"] += 1
@@ -175,7 +185,7 @@ def process_file(file_path, iteration_stats):
 
     return file_path, False, "Keine Lösung nach drei Iterationen"
 
-# Hauptprozess
+
 def main():
     error_files = get_error_files(error_tasks_directory)
     if not error_files:
@@ -185,9 +195,11 @@ def main():
     total_tests, successful_tests, failed_tests = 0, 0, 0
 
     # Initialize stats for each iteration
-    iteration_stats = {1: {"total": 0, "success": 0, "failure": 0},
-                       2: {"total": 0, "success": 0, "failure": 0},
-                       3: {"total": 0, "success": 0, "failure": 0}}
+    iteration_stats = {
+        1: {"total": 0, "success": 0, "failure": 0},
+        2: {"total": 0, "success": 0, "failure": 0},
+        3: {"total": 0, "success": 0, "failure": 0},
+    }
 
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures = {executor.submit(process_file, file, iteration_stats): file for file in error_files}
@@ -200,14 +212,14 @@ def main():
                 failed_tests += 1
             print(f"Ergebnis für {file_path}: {message}")
 
-    # Ausgabe der Statistik übergeordnet
+    # Print overall stats
     print(f"\nGesamtzahl der Tests: {total_tests}")
     print(f"Erfolgreiche Tests: {successful_tests}")
     print(f"Fehlgeschlagene Tests: {failed_tests}")
     if total_tests > 0:
         print(f"Erfolgsquote: {(successful_tests / total_tests) * 100:.2f}%")
 
-    # Ausgabe der Statistik für jede Iteration
+    # Print iteration stats
     for iteration, stats in iteration_stats.items():
         print(f"\nIteration {iteration}:")
         print(f"  Tests insgesamt: {stats['total']}")
@@ -219,7 +231,86 @@ def main():
         else:
             print("  Keine Tests durchgeführt.")
 
+def parse_and_create_csv(log_lines):
+    pattern_iteration = re.compile(r"Iteration\s+(\d+)\s+für\s+Datei:\s+(.*)")
+    pattern_result    = re.compile(r"Ergebnis\s+für\s+(.*?):\s+(.*)")
+
+    task_dict = {}
+    current_iter = None
+
+    for line in log_lines:
+        it_match = pattern_iteration.search(line)
+        if it_match:
+            current_iter = int(it_match.group(1))
+            filepath     = it_match.group(2)
+
+            task_name = re.sub(r'^tasks/error_tasks/', '', filepath)
+            task_name = re.sub(r'\.py$', '', task_name)
+
+            if task_name not in task_dict:
+                task_dict[task_name] = [None, None, None]
+        else:
+            res_match = pattern_result.search(line)
+            if res_match:
+                file_in_result = res_match.group(1)
+                msg            = res_match.group(2)
+
+                # Prüfen, ob wir es mit einer .py-Datei zu tun haben:
+                if not file_in_result.endswith(".py"):
+                    # -> z. B. 'scraped_data.csv' => ignorieren
+                    continue
+
+                # mapped task name
+                file_in_result = re.sub(r'^tasks/error_tasks/', '', file_in_result)
+                file_in_result = re.sub(r'\.py$', '', file_in_result)
+
+                # Falls kein Dictionary-Eintrag vorhanden, ignorieren:
+                if file_in_result not in task_dict:
+                    continue
+
+                # Erfolg?
+                success = ("Unittest erfolgreich" in msg)
+                if current_iter is not None:
+                    idx = current_iter - 1
+                    if success:
+                        task_dict[file_in_result][idx] = True
+                        # Falls es in dieser Iteration bereits erfolgreich war,
+                        # markiere alle danach noch None als false
+                        for i in range(current_iter, 3):
+                            if task_dict[file_in_result][i] is None:
+                                task_dict[file_in_result][i] = False
+                    else:
+                        task_dict[file_in_result][idx] = False
+
+                    # Falls "Keine Lösung nach drei Iterationen" => alle false
+                    if "Keine Lösung nach drei Iterationen" in msg:
+                        for i in range(3):
+                            if task_dict[file_in_result][i] is None:
+                                task_dict[file_in_result][i] = False
+
+    # CSV schreiben
+    with open("log.csv", "w", newline="", encoding="utf-8") as csvfile:
+        writer = csv.writer(csvfile, delimiter=",")
+        writer.writerow(["Task", "Iteration 1", "Iteration 2", "Iteration 3"])
+
+        for task_name, iteration_results in task_dict.items():
+            # z. B. [True, False, None]
+            # None => hat in der Iteration gar keine Info -> als false werten
+            iteration_values = []
+            for val in iteration_results:
+                if val is None:
+                    iteration_values.append("false")
+                else:
+                    iteration_values.append(str(val).lower())
+            row = [task_name] + iteration_values
+            writer.writerow(row)
+
 
 if __name__ == "__main__":
+    # Hauptablauf des ursprünglichen Codes
     main()
+
+    # Jetzt die CSV generieren
+    parse_and_create_csv(log_buffer)
+    print("\n--- CSV 'log.csv' wurde erfolgreich erzeugt. ---")
 
