@@ -1,45 +1,39 @@
 import os
-import sys
 import re
 import subprocess
 import importlib.util
-import shutil
 from openai import OpenAI
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import functools
 import time
 import csv
-
-# Original-Print flushen:
-print = functools.partial(print, flush=True)
-
-# Wir puffern die Ausgaben in log_buffer.
-log_buffer = []
-old_print = print
-
-def capturing_print(*args, **kwargs):
-    text = " ".join(str(a) for a in args)
-    log_buffer.append(text)
-    return old_print(*args, **kwargs)
-
-print = capturing_print
+import threading
+from collections import defaultdict
 
 
-# Lade die API-Schlüssel aus der .env-Datei
+# API Key aus .env-Datei laden und OpenAI-Client initialisieren
 load_dotenv()
+api_key = os.getenv("secret_api_key_openrouter")
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=api_key
+)
 
-# Erstelle eine OpenAI-Instanz
-api_key = os.getenv("secret_api_key_openai")
-client = OpenAI(api_key=api_key)
 
-# Verzeichniss festlegen
+# Verzeichnis mit den Fehlerdateien und Modelle, die getestet werden sollen
 error_tasks_directory = "tasks/error_tasks"
+models_to_test = ["google/gemini-pro-1.5","openai/gpt-4o-2024-11-20", "anthropic/claude-3.5-sonnet", "google/gemini-flash-1.5","openai/gpt-4o-mini-2024-07-18","anthropic/claude-3.5-haiku-20241022", "qwen/qwen-2.5-coder-32b-instruct","deepseek/deepseek-chat"]
 
-# Liste der zu testenden Modelle
-models_to_test = ["gpt-4o-mini"]  
 
-# Hilfsfunktionen zur Auflistung von Dateien, die nicht auf unittest.py enden
+# Lock für jede Unittest-Datei, damit nur ein Thread dieselbe Unittest-Datei zur selben Zeit benutzt
+unittest_locks = defaultdict(threading.Lock)
+
+
+# Tracker für die Ergebnisse der einzelnen Modelle und Dateien
+results_tracker = {}
+
+
+# Hilfsfunktion zum Lesen aller Dateien im Ordner, die nicht auf 'unittest.py' enden
 def get_error_files(directory):
 
     try:
@@ -52,9 +46,9 @@ def get_error_files(directory):
         print(f"Fehler beim Lesen des Verzeichnisses: {e}")
         return []
 
-# Hilfsfunktionen zur Dateiverarbeitung
-def read_file_content(file_path):
 
+# Hilfsfunktion zum Lesen des Dateiinhalts
+def read_file_content(file_path):
     try:
         with open(file_path, 'r') as file:
             return file.read()
@@ -62,14 +56,14 @@ def read_file_content(file_path):
         print(f"Fehler beim Lesen der Datei {file_path}: {e}")
         return None
 
-# Hilfsfunktionen zur Fehleranalyse mittels LLM
+
+# Hilfsfunktion zur Fehleranalyse mit API
 def analyze_error_with_openai(error_text, model_name, unittest_output=None):
 
     try:
         prompt = (
             f"Hier ist ein fehlerhafter Python-Code:\n\n{error_text}\n\n"
-            "Analysiere die Fehler und gib eine korrigierte Version des Codes zurück. "
-            "Behalte die Struktur des ursprünglichen Codes bei."
+            "Korrigiere die Fehler und gib den vollständigen Code als Python-Markdown-Codeblock aus."
         )
         if unittest_output:
             prompt += (
@@ -79,24 +73,35 @@ def analyze_error_with_openai(error_text, model_name, unittest_output=None):
 
         response = client.chat.completions.create(
             model=model_name,
-            temperature=0,
+            temperature=0.5,
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}]
         )
         response_content = response.choices[0].message.content
         code_blocks = extract_code_blocks(response_content)
-        return code_blocks[0] if code_blocks else None
+        return code_blocks[0] if code_blocks else response_content
     except Exception as e:
+        import traceback
+        # Grundlegende Fehlermeldung
         print(f"Fehler bei der Kommunikation mit der OpenAI API: {e}")
-        return None
+        # Detaillierte Fehlerspur ausgeben
+        traceback.print_exc()
+        # Falls die API-Antwort ein spezifisches Attribut enthält
+        # (z. B. HTTP-Status oder Details), prüfen
+        if hasattr(e, 'response') and e.response is not None:
+            print("Detaillierte API-Antwort:")
+            print(e.response)
+        return f"Fehler bei der API-Anfrage: {e}"
 
-# Hilfsfunktionen zur Extraktion von Codeblöcken aus Markdown
+
+# Hilfsfunktionen für Code-Extraktion
 def extract_code_blocks(content):
 
-    code_blocks = re.findall(r"`python(.*?)`", content, re.DOTALL)
+    code_blocks = re.findall(r"```python(.*?)```", content, re.DOTALL)
     return [block.strip() for block in code_blocks]
 
-# Hilfsfunktion zur Speicherung des korrigierten Codes
+
+# Hilfsfunktion zum Speichern von Dateien
 def save_to_file(filename, content):
 
     try:
@@ -106,7 +111,8 @@ def save_to_file(filename, content):
     except Exception as e:
         print(f"Fehler beim Speichern der Datei {filename}: {e}")
 
-# Hilfsfunktionen zum dynmaischen Import der jeweiligen Datei des Unittests
+
+# Hilfsfunktionen für Unittest-Import
 def inject_module_import(unittest_file_path, module_name):
 
     try:
@@ -128,40 +134,49 @@ def inject_module_import(unittest_file_path, module_name):
         print(f"Fehler beim Importieren des Moduls: {e}")
         return False
 
-# Hilfsfunktionen zum Ausführen des Unittests
-def run_unittest(unittest_file, module_name, module_path):
-    try:
-        # Warten, um sicherzustellen, dass die Datei korrekt gespeichert wurde
-        time.sleep(1)
 
-        # Modul laden
+# Hilfsfunktionen für Unittest-Ausführung
+def run_unittest(unittest_file, module_name, module_path):
+
+    try:
+        time.sleep(1)  # Sicherstellen, dass Datei korrekt vorliegt
+
         spec = importlib.util.spec_from_file_location(module_name, module_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
 
-        # Unittest ausführen
         unittest_dir = os.path.dirname(unittest_file)
         result = subprocess.run(
             ["python", os.path.basename(unittest_file)],
-            capture_output=True, text=True, cwd=unittest_dir
+            capture_output=True,
+            text=True,
+            cwd=unittest_dir
         )
-        output = result.stdout + result.stderr
 
-        # Prüfe den Rückgabewert des Prozesses
-        success = result.returncode == 0
+        output = result.stdout + result.stderr
+        success = (result.returncode == 0)
         return success, output
     except Exception as e:
         print(f"Fehler beim Ausführen des Unittests: {e}")
         return False, str(e)
 
-# Hilfsfunktionen zum Aufruf des LLM mit maximal drei Iterationen
+
+# Hilfsfunktion zum Verarbeiten einer Datei
 def process_file(file_path, iteration_stats, model_name):
+    # Falls noch kein Eintrag in results_tracker, legen wir einen an
+    if (model_name, file_path) not in results_tracker:
+        results_tracker[(model_name, file_path)] = {
+            "iterations": [None, None, None],
+            "final_success": None
+        }
 
     error_content = read_file_content(file_path)
     if not error_content:
+        # Direkt als Fehlschlag markieren
+        results_tracker[(model_name, file_path)]["iterations"][0] = False
+        results_tracker[(model_name, file_path)]["final_success"] = False
         return file_path, False, "Keine Inhalte"
 
-    corrected_code = None
     corrected_file_path = file_path.replace(".py", "_corrected.py")
     base_name = os.path.basename(file_path).split("_")[0:3]
     task_name = "_".join(base_name)
@@ -179,26 +194,135 @@ def process_file(file_path, iteration_stats, model_name):
         if corrected_code:
             save_to_file(corrected_file_path, corrected_code)
             module_name = os.path.splitext(os.path.basename(corrected_file_path))[0]
-            inject_module_import(unittest_file, module_name)
-            success, unittest_output = run_unittest(unittest_file, module_name, corrected_file_path)
+
+            # Wartezeit und Prüfung, ob Datei existiert
+            max_wait_time = 10  # Maximal 10 Sekunden warten
+            wait_interval = 0.5  # Alle 0.5 Sekunden prüfen
+            waited_time = 0
+            while not os.path.exists(corrected_file_path) and waited_time < max_wait_time:
+                time.sleep(wait_interval)
+                waited_time += wait_interval
+
+            if not os.path.exists(corrected_file_path):
+                iteration_stats[iteration + 1]["total"] += 1
+                iteration_stats[iteration + 1]["failure"] += 1
+                results_tracker[(model_name, file_path)]["iterations"][iteration] = False
+                return file_path, False, "Korrigierte Datei wurde nicht gefunden"
+
+            # Lock, damit nur ein Thread dieselbe Unittest-Datei nutzt
+            with unittest_locks[unittest_file]:
+                inject_module_import(unittest_file, module_name)
+                success, unittest_output = run_unittest(unittest_file, module_name, corrected_file_path)
+
             print("Unittest-Ausgabe:")
             print(unittest_output)
 
             # Update iteration stats
             iteration_stats[iteration + 1]["total"] += 1
+
             if success:
                 iteration_stats[iteration + 1]["success"] += 1
+
+                # Hier direkt im results_tracker vermerken
+                results_tracker[(model_name, file_path)]["iterations"][iteration] = True
+                results_tracker[(model_name, file_path)]["final_success"] = True
+
                 return file_path, True, "Unittest erfolgreich"
             else:
                 iteration_stats[iteration + 1]["failure"] += 1
-        else:
+                results_tracker[(model_name, file_path)]["iterations"][iteration] = False
+        else:  # Keine korrigierte Version oder kein Codeblock gefunden
+            # Speichere die unveränderte API-Ausgabe in einer separaten Datei
+            unmodified_output_path = file_path.replace(
+                ".py", f"_unmodified_iteration{iteration + 1}.txt")
+            save_to_file(unmodified_output_path, corrected_code)  # Speichern
+
             iteration_stats[iteration + 1]["total"] += 1
             iteration_stats[iteration + 1]["failure"] += 1
+            results_tracker[(model_name, file_path)]["iterations"][iteration] = False
             return file_path, False, "Keine korrigierte Version erhalten"
 
+    # Nach 3 Iterationen kein Erfolg
+    results_tracker[(model_name, file_path)]["final_success"] = False
     return file_path, False, "Keine Lösung nach drei Iterationen"
 
-# Hauptprozess
+
+# Hilfsfunktion zum Erstellen einer CSV-Datei aus den Ergebnissen
+def create_csv_from_results(
+    model_name,
+    iteration_stats,
+    total_tests,
+    successful_tests,
+    failed_tests
+):
+    csv_filename = f"log_{model_name.replace('/', '_')}.csv"
+    with open(csv_filename, "w", newline="", encoding="utf-8") as csvfile:
+        writer = csv.writer(csvfile, delimiter=",")
+
+        # Kopfzeile für einzelne Tasks pro Iteration
+        writer.writerow(["Task", "Iteration 1", "Iteration 2", "Iteration 3"])
+
+        # Iteriere nur über (model_name, file_path) in results_tracker,
+        # die auch zu unserem aktuellen Modell gehören
+        for (m_name, f_path), data in results_tracker.items():
+            if m_name != model_name:
+                continue  # Nur das aktuelle Modell
+
+            # Task-Name aus Pfad extrahieren
+            task_name = re.sub(r'^tasks/error_tasks/', '', f_path)
+            task_name = re.sub(r'\.py$', '', task_name)
+
+            iteration_vals = []
+            for val in data["iterations"]:
+                if val is True:
+                    iteration_vals.append("true")
+                elif val is False:
+                    iteration_vals.append("false")
+                else:
+                    # Falls None, hat die Iteration gar nicht stattgefunden
+                    iteration_vals.append("false")  # oder "none", wie man mag
+
+            row = [task_name] + iteration_vals
+            writer.writerow(row)
+
+        # Leerzeile
+        writer.writerow([])
+        # Gesamte Übersicht
+        writer.writerow(["Globale Statistik"])
+        writer.writerow(["Gesamtanzahl Tests", total_tests])
+        writer.writerow(["Erfolgreiche Tests", successful_tests])
+        writer.writerow(["Fehlgeschlagene Tests", failed_tests])
+        if total_tests > 0:
+            global_success_rate = (successful_tests / total_tests) * 100
+            writer.writerow(["Erfolgsquote", f"{global_success_rate:.2f}%"])
+        else:
+            writer.writerow(["Erfolgsquote", "0.00%"])
+
+        # Leerzeile
+        writer.writerow([])
+        # Iterationsübersicht
+        writer.writerow(["Iterations-Statistik"])
+        writer.writerow(["Iteration", "Tests insgesamt", "Erfolgreiche Tests", "Fehlgeschlagene Tests", "Erfolgsquote"])
+
+        for iteration, stats in iteration_stats.items():
+            iteration_total = stats["total"]
+            iteration_success = stats["success"]
+            iteration_failure = stats["failure"]
+
+            if iteration_total > 0:
+                iteration_success_rate = (iteration_success / iteration_total) * 100
+                writer.writerow([
+                    iteration,
+                    iteration_total,
+                    iteration_success,
+                    iteration_failure,
+                    f"{iteration_success_rate:.2f}%"
+                ])
+            else:
+                writer.writerow([iteration, 0, 0, 0, "Keine Tests durchgeführt."])
+
+
+# Hauptfunktion zum Starten der Tests
 def main():
     error_files = get_error_files(error_tasks_directory)
     if not error_files:
@@ -207,17 +331,23 @@ def main():
 
     for model_name in models_to_test:
         print(f"\n\n--- Starte Tests mit Modell: {model_name} ---\n")
-        total_tests, successful_tests, failed_tests = 0, 0, 0
+        total_tests = 0
+        successful_tests = 0
+        failed_tests = 0
 
-        # Initialize stats for each iteration
+        # Initialisiere die Statistiken pro Iteration (1, 2, 3)
         iteration_stats = {
             1: {"total": 0, "success": 0, "failure": 0},
             2: {"total": 0, "success": 0, "failure": 0},
             3: {"total": 0, "success": 0, "failure": 0},
         }
 
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            futures = {executor.submit(process_file, file, iteration_stats, model_name): file for file in error_files}
+        # ThreadPoolExecutor zum parallelen Abarbeiten der Dateien
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = {
+                executor.submit(process_file, file, iteration_stats, model_name): file
+                for file in error_files
+            }
             for future in as_completed(futures):
                 file_path, success, message = future.result()
                 total_tests += 1
@@ -227,14 +357,14 @@ def main():
                     failed_tests += 1
                 print(f"Ergebnis für {file_path} ({model_name}): {message}")
 
-        # Ausgabe der Statistik übergeordnet
+        # Ausgabe der Gesamtergebnisse auf der Konsole
         print(f"\nGesamtzahl der Tests ({model_name}): {total_tests}")
         print(f"Erfolgreiche Tests ({model_name}): {successful_tests}")
         print(f"Fehlgeschlagene Tests ({model_name}): {failed_tests}")
         if total_tests > 0:
             print(f"Erfolgsquote ({model_name}): {(successful_tests / total_tests) * 100:.2f}%")
 
-        # Ausgabe der Statistik für jede Iteration
+        # Iterationsstatistiken (1..3)
         for iteration, stats in iteration_stats.items():
             print(f"\nIteration {iteration} ({model_name}):")
             print(f"  Tests insgesamt: {stats['total']}")
@@ -246,98 +376,16 @@ def main():
             else:
                 print("  Keine Tests durchgeführt.")
 
-        # 2) Nach Ende jeder Modell-Iteration: CSV erzeugen & "fremde" Dateien ignorieren
-        parse_and_create_csv(log_buffer, model_name)
+        # CSV-Erzeugung auf Basis unserer gesammelten Daten
+        create_csv_from_results(
+            model_name,
+            iteration_stats,
+            total_tests,
+            successful_tests,
+            failed_tests
+        )
         print(f"\n--- CSV 'log_{model_name}.csv' wurde erfolgreich erzeugt. ---")
-        log_buffer.clear() # Leere den log_buffer für das nächste Modell
-
-# Hilfsfunktion für die Logdatenanalyse und -export
-def parse_and_create_csv(log_lines, model_name):
-
-    pattern_iteration = re.compile(r"Modell:\s+(.*?), Iteration\s+(\d+)\s+für\s+Datei:\s+(.*)")
-    pattern_result    = re.compile(r"Ergebnis\s+für\s+(.*?)\s+\((.*?)\):\s+(.*)")
-
-    task_dict = {}
-    current_iter = None
-    current_model = None
-
-    for line in log_lines:
-        it_match = pattern_iteration.search(line)
-        if it_match:
-            current_model = it_match.group(1)
-            current_iter = int(it_match.group(2))
-            filepath     = it_match.group(3)
-
-            if current_model != model_name:  # Nur Zeilen für das aktuelle Modell beachten
-                continue
-
-            task_name = re.sub(r'^tasks/error_tasks/', '', filepath)
-            task_name = re.sub(r'\.py$', '', task_name)
-
-            if task_name not in task_dict:
-                task_dict[task_name] = [None, None, None]
-
-        else:
-            res_match = pattern_result.search(line)
-            if res_match:
-                file_in_result = res_match.group(1)
-                model_in_result = res_match.group(2)
-                msg            = res_match.group(3)
-
-                if model_in_result != model_name:  # Nur Zeilen für das aktuelle Modell beachten
-                    continue
-
-                # Prüfen, ob wir es mit einer .py-Datei zu tun haben:
-                if not file_in_result.endswith(".py"):
-                    # -> z. B. 'scraped_data.csv' => ignorieren
-                    continue
-
-                # mapped task name
-                file_in_result = re.sub(r'^tasks/error_tasks/', '', file_in_result)
-                file_in_result = re.sub(r'\.py$', '', file_in_result)
-
-                # Falls kein Dictionary-Eintrag vorhanden, ignorieren:
-                if file_in_result not in task_dict:
-                    continue
-
-                # Erfolg?
-                success = ("Unittest erfolgreich" in msg)
-                if current_iter is not None:
-                    idx = current_iter - 1
-                    if success:
-                        task_dict[file_in_result][idx] = True
-                        # Falls es in dieser Iteration bereits erfolgreich war,
-                        # markiere alle danach noch None als false
-                        for i in range(current_iter, 3):
-                            if task_dict[file_in_result][i] is None:
-                                task_dict[file_in_result][i] = False
-                    else:
-                        task_dict[file_in_result][idx] = False
-
-                    # Falls "Keine Lösung nach drei Iterationen" => alle false
-                    if "Keine Lösung nach drei Iterationen" in msg:
-                        for i in range(3):
-                            if task_dict[file_in_result][i] is None:
-                                task_dict[file_in_result][i] = False
-
-    # CSV schreiben
-    with open(f"log_{model_name}.csv", "w", newline="", encoding="utf-8") as csvfile:
-        writer = csv.writer(csvfile, delimiter=",")
-        writer.writerow(["Task", "Iteration 1", "Iteration 2", "Iteration 3"])
-
-        for task_name, iteration_results in task_dict.items():
-            # z. B. [True, False, None]
-            # None => hat in der Iteration gar keine Info -> als false werten
-            iteration_values = []
-            for val in iteration_results:
-                if val is None:
-                    iteration_values.append("false")
-                else:
-                    iteration_values.append(str(val).lower())
-            row = [task_name] + iteration_values
-            writer.writerow(row)
 
 
 if __name__ == "__main__":
     main()
-
