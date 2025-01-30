@@ -46,7 +46,7 @@ def run_tests_for_error_tasks(error_tasks_dir):
                             # Führe den Unittest aus
                             exec(final_unittest_code, globals())
 
-                            suite = unittest.TestLoader().loadTestsFromTestCase(TestCases)  # Ersetzen Sie 'TestCases' durch Ihren Klassennamen!
+                            suite = unittest.TestLoader().loadTestsFromTestCase(TestCases)
                             runner = unittest.TextTestRunner()
                             result = runner.run(suite)
 

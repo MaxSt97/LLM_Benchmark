@@ -15,8 +15,10 @@ def delete_temp_files(directory):
     except Exception as e:
         print(f"Fehler beim Löschen der Dateien: {e}")
 
+
 # Löschen der temporären Dateien
 delete_temp_files(error_tasks_directory)
+
 
 # Hilfsfunltionen für das Löschen von Dateien
 def delete_temp_filesI(directory):
@@ -29,6 +31,7 @@ def delete_temp_filesI(directory):
         print("Alle '_temp.py'-Dateien wurden gelöscht.")
     except Exception as e:
         print(f"Fehler beim Löschen der Dateien: {e}")
+
 
 # Löschen der temporären Dateien
 delete_temp_filesI(error_tasks_directory)

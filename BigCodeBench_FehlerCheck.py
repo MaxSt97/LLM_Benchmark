@@ -25,7 +25,7 @@ error_tasks_directory = "tasks/error_tasks"
 models_to_test = ["google/gemini-pro-1.5","openai/gpt-4o-2024-11-20", "anthropic/claude-3.5-sonnet", "google/gemini-flash-1.5","openai/gpt-4o-mini-2024-07-18","anthropic/claude-3.5-haiku-20241022", "qwen/qwen-2.5-coder-32b-instruct","deepseek/deepseek-chat"]
 
 
-# Lock für jede Unittest-Datei, damit nur ein Thread dieselbe Unittest-Datei zur selben Zeit benutzt
+# Lock für jede Unittest-Datei
 unittest_locks = defaultdict(threading.Lock)
 
 
@@ -87,7 +87,6 @@ def analyze_error_with_openai(error_text, model_name, unittest_output=None):
         # Detaillierte Fehlerspur ausgeben
         traceback.print_exc()
         # Falls die API-Antwort ein spezifisches Attribut enthält
-        # (z. B. HTTP-Status oder Details), prüfen
         if hasattr(e, 'response') and e.response is not None:
             print("Detaillierte API-Antwort:")
             print(e.response)
@@ -163,7 +162,6 @@ def run_unittest(unittest_file, module_name, module_path):
 
 # Hilfsfunktion zum Verarbeiten einer Datei
 def process_file(file_path, iteration_stats, model_name):
-    # Falls noch kein Eintrag in results_tracker, legen wir einen an
     if (model_name, file_path) not in results_tracker:
         results_tracker[(model_name, file_path)] = {
             "iterations": [None, None, None],
