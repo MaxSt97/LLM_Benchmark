@@ -64,6 +64,7 @@ Das Skript unterstützt die folgenden LLMs über die OpenRouter-API:
 *   Der Code verwendet Threading für die parallele Verarbeitung von Dateien.
 *   Unittests werden für jede korrigierte Datei ausgeführt, um die Korrektheit der Korrekturen zu überprüfen.
 *   Die maximale Anzahl an Iterationen pro Datei ist auf 3 begrenzt.
+*   Im Verzeichnis `error_tasks_with-comments` befinden sich die Aufgaben mit eingebauten Fehlern und den Kommentaren.
 
 **Anpassung:**
 
