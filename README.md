@@ -40,11 +40,11 @@ Das Skript unterstützt die folgenden LLMs über die OpenRouter-API:
 
 **Ausführung:**
 
-1.  Erstellen Sie ein Docker-Image aus dem beigefügten Dockerfile:
+1.  Docker-Image erstellen:
     ```bash
     docker build -t bigcodebench-fehlercheck .
     ```
-2.  Starten Sie einen Docker-Container:
+2.  Docker-Container starten:
     ```bash
     docker run -it bigcodebench-fehlercheck
     ```
