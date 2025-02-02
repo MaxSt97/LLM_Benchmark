@@ -1,7 +1,7 @@
 # LLM_Benchmark
 
 **Hintergrund**
-Das vorliegende Skript dient der Automatisierung der Testdurchführung im Rahmen des LLM-Benchmarks mittels der OpenRouter-API. Die anderen vorhandenen Skripte dienen der Fehlererzeugung oder dienen als Arbeitserleichterung. Die Skripte wurden im Rahmen einer Masterarbeit genutzt. Alle weiteren relevanten Informationen sind in dieser zu finden.
+Das vorliegende Skript dient der Automatisierung der Testdurchführung im Rahmen des LLM-Benchmarks mittels der OpenRouter-API. Die anderen vorhandenen Skripte dienen der Fehlererzeugung oder dienen als Arbeitserleichterung. Die Skripte wurden im Rahmen einer Masterarbeit genutzt. Alle weiteren relevanten Informationen sind in der schriftlichen Ausführung enthalten.
 
 
 1.  **Laden fehlerhafter Code-Dateien:** Liest Python-Dateien aus dem Verzeichnis `tasks/error_tasks`. Diese Dateien enthalten vermutlich absichtlich eingefügte Fehler (Syntaxfehler, Laufzeitfehler oder Logikfehler).
