@@ -49,10 +49,6 @@ Das Skript unterstützt die folgenden LLMs über die OpenRouter-API:
     ```bash
     docker run -it bigcodebench-fehlercheck
     ```
-    Falls die .env mit den API-Keys noch übergeben werden muss (Diese muss im jeweiligen Verzeichnis vorhanden sein):
-    ```bash
-    docker run -it --env-file ./.env bigcodebench-fehlercheck
-    ```
    
 **Ausgabe:**
 
