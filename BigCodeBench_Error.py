@@ -29,7 +29,6 @@ errors = {
 
 # Hilfsfunktion zum Speichern von Inhalten in Dateien
 def save_to_file(filename, content):
-    """Speichert den gegebenen Inhalt in einer Datei."""
     with open(filename, "w", encoding="utf-8") as file:
         file.write(content)
 
