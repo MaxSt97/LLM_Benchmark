@@ -35,7 +35,7 @@ Das Skript unterstützt die folgenden LLMs über die OpenRouter-API:
 *   **Python 3.10:** Das Basis-Image ist `python:3.10-slim`.
 *   **.env-Datei:** Eine `.env`-Datei im Hauptverzeichnis muss einen API-Schlüssel für OpenRouter enthalten:
     ```
-    secret_api_key_openrouter=<Ihr OpenRouter API-Schlüssel>
+    secret_api_key_openrouter=<OpenRouter API-Schlüssel>
     ```
 *   **requirements.txt:** Diese Datei enthät alle benötigten Python-Pakete.
 
